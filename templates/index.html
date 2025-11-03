@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Pitwall - Live Race Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #e10600 0%, #ff1e00 100%);
+            padding: 20px 40px;
+            box-shadow: 0 4px 20px rgba(225, 6, 0, 0.3);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .session-selector {
+            background: #242424;
+            padding: 20px 40px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            border-bottom: 2px solid #333;
+            flex-wrap: wrap;
+        }
+
+        select,
+        button {
+            padding: 12px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        select {
+            background: #333;
+            color: #fff;
+            min-width: 200px;
+        }
+
+        button {
+            background: #e10600;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            background: #ff1e00;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(225, 6, 0, 0.4);
+        }
+
+        button.active {
+            background: #00ff00;
+            color: #000;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 30px 40px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            background: #2a2a2a;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .tab:hover {
+            background: #333;
+        }
+
+        .tab.active {
+            background: #e10600;
+            transform: translateY(-2px);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .standings-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .standings-table th,
+        .standings-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+
+        .standings-table th {
+            color: #e10600;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.9em;
+            position: sticky;
+            top: 0;
+            background: #1e1e1e;
+        }
+
+        .standings-table tr:hover {
+            background: #252525;
+        }
+
+        .rank {
+            font-weight: bold;
+            font-size: 1.3em;
+            color: #e10600;
+            width: 50px;
+        }
+
+        .rank-1 {
+            color: #FFD700;
+        }
+
+        .rank-2 {
+            color: #C0C0C0;
+        }
+
+        .rank-3 {
+            color: #CD7F32;
+        }
+
+        .points {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #00ff00;
+        }
+
+        .podium-badge {
+            display: inline-block;
+            background: #9d00ff;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .wins-badge {
+            display: inline-block;
+            background: #ffd700;
+            color: black;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            border: 1px solid #333;
+        }
+
+        .card h2 {
+            color: #e10600;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .positions-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .positions-table th,
+        .positions-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+
+        .positions-table th {
+            color: #e10600;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+
+        .positions-table tr:hover {
+            background: #252525;
+        }
+
+        .position {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #e10600;
+        }
+
+        .driver-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .team-color {
+            width: 4px;
+            height: 25px;
+            border-radius: 2px;
+        }
+
+        .event-item {
+            padding: 15px;
+            margin-bottom: 12px;
+            background: #252525;
+            border-radius: 8px;
+            border-left: 4px solid #e10600;
+            transition: all 0.2s ease;
+        }
+
+        .event-item:hover {
+            background: #2a2a2a;
+            transform: translateX(5px);
+        }
+
+        .event-time {
+            color: #888;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+
+        .event-message {
+            font-size: 1em;
+            line-height: 1.5;
+        }
+
+        .pit-stop {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            background: #252525;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #ffd700;
+        }
+
+        .weather-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .weather-item {
+            background: #252525;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .weather-label {
+            color: #888;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+
+        .weather-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #e10600;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+            color: #888;
+        }
+
+        .status-live {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #00ff00;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .radio-message {
+            background: #1a2a3a;
+            border-left: 4px solid #00aaff;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .stint-info {
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+            background: #252525;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .tire-compound {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+
+        .soft {
+            background: #ff0000;
+            color: white;
+        }
+
+        .medium {
+            background: #ffd700;
+            color: black;
+        }
+
+        .hard {
+            background: #ffffff;
+            color: black;
+        }
+
+        .intermediate {
+            background: #00ff00;
+            color: black;
+        }
+
+        .wet {
+            background: #0000ff;
+            color: white;
+        }
+
+        .fastest-lap-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            background: #252525;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #9d00ff;
+        }
+
+        .lap-time {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #9d00ff;
+        }
+
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .driver-selector {
+            background: #252525;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            background: #252525;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .medal {
+            display: inline-block;
+            width: 25px;
+            height: 25px;
+            line-height: 25px;
+            text-align: center;
+            border-radius: 50%;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .gold {
+            background: gold;
+            color: black;
+        }
+
+        .silver {
+            background: silver;
+            color: black;
+        }
+
+        .bronze {
+            background: #cd7f32;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🏎️ F1 PITWALL</h1>
+    </div>
+
+    <div class="session-selector">
+        <select id="meetingSelect">
+            <option value="">Loading meetings...</option>
+        </select>
+        <select id="sessionSelect">
+            <option value="">Select a session...</option>
+        </select>
+        <button onclick="loadRaceData()">Load Race Data</button>
+        <button onclick="toggleAutoRefresh()" id="autoRefreshBtn">Auto-Refresh: OFF</button>
+    </div>
+
+    <div class="container">
+        <div id="sessionInfo" class="card full-width" style="display: none;">
+            <h2><span class="status-live"></span>Session Info</h2>
+            <div id="sessionDetails"></div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('overview')">📊 Overview</button>
+            <button class="tab" onclick="switchTab('analysis')">📈 Analysis</button>
+            <button class="tab" onclick="switchTab('comparison')">⚔️ Comparison</button>
+            <button class="tab" onclick="switchTab('fastest')">⚡ Fastest Laps</button>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overview" class="tab-content active">
+            <div class="grid">
+                <div class="card">
+                    <h2>🏁 Current Positions</h2>
+                    <div id="positions" class="loading">Select a session to view positions</div>
+                </div>
+
+                <div class="card">
+                    <h2>⛽ Recent Pit Stops</h2>
+                    <div id="pitStops" class="loading">Select a session to view pit stops</div>
+                </div>
+
+                <div class="card">
+                    <h2>🚩 Race Control</h2>
+                    <div id="raceControl" class="loading">Select a session to view race control messages</div>
+                </div>
+
+                <div class="card">
+                    <h2>🌤️ Weather</h2>
+                    <div id="weather" class="loading">Select a session to view weather</div>
+                </div>
+
+                <div class="card full-width">
+                    <h2>📻 Team Radio</h2>
+                    <div id="teamRadio" class="loading">Select a session to view team radio</div>
+                </div>
+
+                <div class="card full-width">
+                    <h2>🛞 Tire Stints</h2>
+                    <div id="stints" class="loading">Select a session to view tire stints</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Tab -->
+        <div id="analysis" class="tab-content">
+            <div class="card full-width">
+                <h2>📈 Lap Time Analysis</h2>
+                <div style="margin-bottom: 20px;">
+                    <select id="driverSelectAnalysis" style="margin-right: 10px;">
+                        <option value="">Select driver...</option>
+                    </select>
+                    <button onclick="loadLapAnalysis()">Analyze</button>
+                </div>
+                <div class="chart-container">
+                    <canvas id="lapTimesChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparison Tab -->
+        <div id="comparison" class="tab-content">
+            <div class="card full-width">
+                <h2>⚔️ Driver Comparison</h2>
+                <div class="comparison-container">
+                    <div class="driver-selector">
+                        <label>Driver 1:</label>
+                        <select id="driver1Select">
+                            <option value="">Select driver...</option>
+                        </select>
+                    </div>
+                    <div class="driver-selector">
+                        <label>Driver 2:</label>
+                        <select id="driver2Select">
+                            <option value="">Select driver...</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="compareDrivers()">Compare</button>
+                <div class="chart-container" style="margin-top: 20px;">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+                <div id="comparisonStats" style="margin-top: 20px;"></div>
+            </div>
+        </div>
+
+        <!-- Fastest Laps Tab -->
+        <div id="fastest" class="tab-content">
+            <div class="card full-width">
+                <h2>⚡ Fastest Laps</h2>
+                <div id="fastestLaps" class="loading">Select a session to view fastest laps</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionKey = null;
+        let autoRefresh = false;
+        let refreshInterval = null;
+        let allDrivers = [];
+        let allLaps = [];
+        let lapTimesChart = null;
+        let comparisonChart = null;
+
+        window.onload = function () {
+            loadMeetings();
+        };
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        async function loadMeetings() {
+            try {
+                const response = await fetch('/api/meetings');
+                const meetings = await response.json();
+
+                const select = document.getElementById('meetingSelect');
+                select.innerHTML = '<option value="">Select a Grand Prix...</option>';
+
+                meetings.reverse().forEach(meeting => {
+                    const option = document.createElement('option');
+                    option.value = meeting.meeting_key;
+                    option.textContent = `${meeting.meeting_name} (${meeting.location})`;
+                    select.appendChild(option);
+                });
+
+                select.onchange = function () {
+                    if (this.value) {
+                        loadSessions(this.value);
+                    }
+                };
+            } catch (error) {
+                console.error('Error loading meetings:', error);
+            }
+        }
+
+        async function loadSessions(meetingKey) {
+            try {
+                const response = await fetch(`/api/sessions/${meetingKey}`);
+                const sessions = await response.json();
+
+                const select = document.getElementById('sessionSelect');
+                select.innerHTML = '<option value="">Select a session...</option>';
+
+                sessions.forEach(session => {
+                    const option = document.createElement('option');
+                    option.value = session.session_key;
+                    option.textContent = `${session.session_name} - ${new Date(session.date_start).toLocaleString()}`;
+                    select.appendChild(option);
+                });
+
+                select.onchange = function () {
+                    currentSessionKey = this.value;
+                };
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+            }
+        }
+
+        async function loadRaceData() {
+            if (!currentSessionKey) {
+                alert('Please select a session first!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/race-data/${currentSessionKey}`);
+                const data = await response.json();
+
+                allDrivers = data.drivers || [];
+                allLaps = data.all_laps || [];
+
+                displaySessionInfo(data.session_info);
+                displayPositions(data.positions);
+                displayPitStops(data.pit_stops);
+                displayRaceControl(data.race_control);
+                displayWeather(data.weather);
+                displayTeamRadio(data.team_radio);
+                displayStints(data.stints);
+                displayFastestLaps(data.fastest_laps);
+
+                populateDriverSelects();
+            } catch (error) {
+                console.error('Error loading race data:', error);
+            }
+        }
+
+        function populateDriverSelects() {
+            const selects = ['driverSelectAnalysis', 'driver1Select', 'driver2Select'];
+
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = '<option value="">Select driver...</option>';
+
+                allDrivers.forEach(driver => {
+                    const option = document.createElement('option');
+                    option.value = driver.driver_number;
+                    option.textContent = `${driver.driver_number} - ${driver.full_name || driver.name_acronym} (${driver.team_name})`;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        function displaySessionInfo(info) {
+            const container = document.getElementById('sessionInfo');
+            const details = document.getElementById('sessionDetails');
+
+            if (info && info.session_name) {
+                container.style.display = 'block';
+                details.innerHTML = `
+                    <h3>${info.session_name}</h3>
+                    <p><strong>Circuit:</strong> ${info.circuit_short_name || 'N/A'}</p>
+                    <p><strong>Location:</strong> ${info.location || 'N/A'}, ${info.country_name || 'N/A'}</p>
+                    <p><strong>Start:</strong> ${new Date(info.date_start).toLocaleString()}</p>
+                    <p><strong>End:</strong> ${new Date(info.date_end).toLocaleString()}</p>
+                `;
+            }
+        }
+
+        function displayPositions(positions) {
+            const container = document.getElementById('positions');
+
+            if (!positions || positions.length === 0) {
+                container.innerHTML = '<p>No position data available</p>';
+                return;
+            }
+
+            let html = '<table class="positions-table"><thead><tr><th>Pos</th><th>Driver</th><th>Team</th><th>Gap</th></tr></thead><tbody>';
+
+            positions.forEach(pos => {
+                const driver = pos.driver_info || {};
+                const teamColor = driver.team_color || '#FFFFFF';
+                const driverName = driver.full_name || driver.name_acronym || `#${pos.driver_number}`;
+                const teamName = driver.team_name || 'N/A';
+
+                html += `
+                    <tr>
+                        <td class="position">${pos.position || 'N/A'}</td>
+                        <td>
+                            <div class="driver-badge">
+                                <div class="team-color" style="background: ${teamColor};"></div>
+                                <span>${driverName}</span>
+                            </div>
+                        </td>
+                        <td>${teamName}</td>
+                        <td>${pos.gap_to_leader || '-'}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function displayPitStops(pitStops) {
+            const container = document.getElementById('pitStops');
+
+            if (!pitStops || pitStops.length === 0) {
+                container.innerHTML = '<p>No pit stops yet</p>';
+                return;
+            }
+
+            let html = '';
+            pitStops.slice(-10).reverse().forEach(stop => {
+                const driver = stop.driver_info || {};
+                const driverName = driver.full_name || driver.name_acronym || `#${stop.driver_number}`;
+                const teamColor = driver.team_color || '#FFFFFF';
+
+                html += `
+                    <div class="pit-stop" style="border-left-color: ${teamColor};">
+                        <div>
+                            <strong>${driverName}</strong><br>
+                            <span style="color: #888;">Lap ${stop.lap_number}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <strong>${stop.pit_duration ? stop.pit_duration.toFixed(2) + 's' : 'N/A'}</strong>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function displayRaceControl(messages) {
+            const container = document.getElementById('raceControl');
+
+            if (!messages || messages.length === 0) {
+                container.innerHTML = '<p>No race control messages</p>';
+                return;
+            }
+
+            let html = '';
+            messages.slice(-15).reverse().forEach(msg => {
+                html += `
+                    <div class="event-item">
+                        <div class="event-time">${new Date(msg.date).toLocaleTimeString()}</div>
+                        <div class="event-message"><strong>${msg.category || 'Info'}:</strong> ${msg.message}</div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function displayWeather(weatherData) {
+            const container = document.getElementById('weather');
+
+            if (!weatherData || weatherData.length === 0) {
+                container.innerHTML = '<p>No weather data available</p>';
+                return;
+            }
+
+            const latest = weatherData[weatherData.length - 1];
+
+            container.innerHTML = `
+                <div class="weather-info">
+                    <div class="weather-item">
+                        <div class="weather-label">Air Temp</div>
+                        <div class="weather-value">${latest.air_temperature || 'N/A'}°C</div>
+                    </div>
+                    <div class="weather-item">
+                        <div class="weather-label">Track Temp</div>
+                        <div class="weather-value">${latest.track_temperature || 'N/A'}°C</div>
+                    </div>
+                    <div class="weather-item">
+                        <div class="weather-label">Humidity</div>
+                        <div class="weather-value">${latest.humidity || 'N/A'}%</div>
+                    </div>
+                    <div class="weather-item">
+                        <div class="weather-label">Rainfall</div>
+                        <div class="weather-value">${latest.rainfall ? 'Yes' : 'No'}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayTeamRadio(radio) {
+            const container = document.getElementById('teamRadio');
+
+            if (!radio || radio.length === 0) {
+                container.innerHTML = '<p>No team radio messages</p>';
+                return;
+            }
+
+            let html = '';
+            radio.slice(-20).reverse().forEach(msg => {
+                const driver = msg.driver_info || {};
+                const driverName = driver.full_name || driver.name_acronym || `#${msg.driver_number}`;
+
+                html += `
+                    <div class="event-item radio-message">
+                        <div class="event-time">${new Date(msg.date).toLocaleTimeString()} - ${driverName}</div>
+                        <div class="event-message">🎙️ <em>${msg.recording_url ? '<a href="' + msg.recording_url + '" target="_blank" style="color: #00aaff;">Listen</a>' : 'Radio message'}</em></div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function displayStints(stints) {
+            const container = document.getElementById('stints');
+
+            if (!stints || stints.length === 0) {
+                container.innerHTML = '<p>No stint data available</p>';
+                return;
+            }
+
+            const driverStints = {};
+            stints.forEach(stint => {
+                const driverNum = stint.driver_number;
+                if (!driverStints[driverNum]) {
+                    driverStints[driverNum] = [];
+                }
+                driverStints[driverNum].push(stint);
+            });
+
+            let html = '';
+            Object.keys(driverStints).sort((a, b) => a - b).forEach(driverNum => {
+                const driver = driverStints[driverNum][0].driver_info || {};
+                const driverName = driver.full_name || driver.name_acronym || `#${driverNum}`;
+
+                html += `<h3 style="margin: 15px 0 10px 0;">${driverName}</h3>`;
+                driverStints[driverNum].forEach(stint => {
+                    html += `
+                        <div class="stint-info">
+                            <span class="tire-compound ${stint.compound ? stint.compound.toLowerCase() : ''}">${stint.compound || 'Unknown'}</span>
+                            <span>Stint ${stint.stint_number}</span>
+                            <span>Laps: ${stint.lap_start || '?'} - ${stint.lap_end || '?'}</span>
+                            <span>Age: ${stint.tyre_age_at_start || 0} laps</span>
+                        </div>
+                    `;
+                });
+            });
+
+            container.innerHTML = html;
+        }
+
+        function displayFastestLaps(fastestLaps) {
+            const container = document.getElementById('fastestLaps');
+
+            if (!fastestLaps || fastestLaps.length === 0) {
+                container.innerHTML = '<p>No lap data available</p>';
+                return;
+            }
+
+            let html = '';
+            fastestLaps.forEach((lap, index) => {
+                const driver = lap.driver_info || {};
+                const driverName = driver.full_name || driver.name_acronym || `#${lap.driver_number}`;
+                const teamColor = driver.team_color || '#FFFFFF';
+                const lapTime = formatLapTime(lap.lap_duration);
+
+                let medal = '';
+                if (index === 0) medal = '<span class="medal gold">🥇</span>';
+                else if (index === 1) medal = '<span class="medal silver">🥈</span>';
+                else if (index === 2) medal = '<span class="medal bronze">🥉</span>';
+
+                html += `
+                    <div class="fastest-lap-item" style="border-left-color: ${teamColor};">
+                        <div>
+                            ${medal}
+                            <strong>${driverName}</strong><br>
+                            <span style="color: #888;">Lap ${lap.lap_number}</span>
+                        </div>
+                        <div class="lap-time">${lapTime}</div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function formatLapTime(seconds) {
+            if (!seconds) return 'N/A';
+            const mins = Math.floor(seconds / 60);
+            const secs = (seconds % 60).toFixed(3);
+            return `${mins}:${secs.padStart(6, '0')}`;
+        }
+
+        async function loadLapAnalysis() {
+            const driverNum = document.getElementById('driverSelectAnalysis').value;
+            if (!driverNum) {
+                alert('Please select a driver!');
+                return;
+            }
+
+            const driverLaps = allLaps.filter(lap =>
+                lap.driver_number == driverNum && lap.lap_duration && lap.lap_duration > 0
+            );
+
+            if (driverLaps.length === 0) {
+                alert('No lap data available for this driver');
+                return;
+            }
+
+            const ctx = document.getElementById('lapTimesChart');
+
+            if (lapTimesChart) {
+                lapTimesChart.destroy();
+            }
+
+            const driver = allDrivers.find(d => d.driver_number == driverNum) || {};
+
+            lapTimesChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: driverLaps.map(lap => `Lap ${lap.lap_number}`),
+                    datasets: [{
+                        label: `${driver.full_name || driver.name_acronym} Lap Times`,
+                        data: driverLaps.map(lap => lap.lap_duration),
+                        borderColor: driver.team_color || '#e10600',
+                        backgroundColor: (driver.team_color || '#e10600') + '33',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#fff' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { color: '#fff' },
+                            grid: { color: '#333' }
+                        },
+                        x: {
+                            ticks: { color: '#fff' },
+                            grid: { color: '#333' }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function compareDrivers() {
+            const driver1Num = document.getElementById('driver1Select').value;
+            const driver2Num = document.getElementById('driver2Select').value;
+
+            if (!driver1Num || !driver2Num) {
+                alert('Please select both drivers!');
+                return;
+            }
+
+            const driver1Laps = allLaps.filter(lap =>
+                lap.driver_number == driver1Num && lap.lap_duration && lap.lap_duration > 0
+            );
+            const driver2Laps = allLaps.filter(lap =>
+                lap.driver_number == driver2Num && lap.lap_duration && lap.lap_duration > 0
+            );
+
+            if (driver1Laps.length === 0 || driver2Laps.length === 0) {
+                alert('Not enough lap data for comparison');
+                return;
+            }
+
+            const driver1 = allDrivers.find(d => d.driver_number == driver1Num) || {};
+            const driver2 = allDrivers.find(d => d.driver_number == driver2Num) || {};
+
+            const ctx = document.getElementById('comparisonChart');
+
+            if (comparisonChart) {
+                comparisonChart.destroy();
+            }
+
+            const maxLaps = Math.max(driver1Laps.length, driver2Laps.length);
+            const labels = Array.from({ length: maxLaps }, (_, i) => `Lap ${i + 1}`);
+
+            comparisonChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: driver1.full_name || driver1.name_acronym || `Driver ${driver1Num}`,
+                            data: driver1Laps.map(lap => lap.lap_duration),
+                            borderColor: driver1.team_color || '#e10600',
+                            backgroundColor: (driver1.team_color || '#e10600') + '33',
+                            tension: 0.4
+                        },
+                        {
+                            label: driver2.full_name || driver2.name_acronym || `Driver ${driver2Num}`,
+                            data: driver2Laps.map(lap => lap.lap_duration),
+                            borderColor: driver2.team_color || '#00aaff',
+                            backgroundColor: (driver2.team_color || '#00aaff') + '33',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#fff' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { color: '#fff' },
+                            grid: { color: '#333' }
+                        },
+                        x: {
+                            ticks: { color: '#fff' },
+                            grid: { color: '#333' }
+                        }
+                    }
+                }
+            });
+
+            // Calculate statistics
+            const avgTime1 = driver1Laps.reduce((sum, lap) => sum + lap.lap_duration, 0) / driver1Laps.length;
+            const avgTime2 = driver2Laps.reduce((sum, lap) => sum + lap.lap_duration, 0) / driver2Laps.length;
+            const bestTime1 = Math.min(...driver1Laps.map(lap => lap.lap_duration));
+            const bestTime2 = Math.min(...driver2Laps.map(lap => lap.lap_duration));
+
+            const statsContainer = document.getElementById('comparisonStats');
+            statsContainer.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                    <div style="background: #252525; padding: 20px; border-radius: 8px; border-left: 4px solid ${driver1.team_color || '#e10600'};">
+                        <h3>${driver1.full_name || driver1.name_acronym || `Driver ${driver1Num}`}</h3>
+                        <p><strong>Average Lap:</strong> ${formatLapTime(avgTime1)}</p>
+                        <p><strong>Best Lap:</strong> ${formatLapTime(bestTime1)}</p>
+                        <p><strong>Total Laps:</strong> ${driver1Laps.length}</p>
+                    </div>
+                    <div style="background: #252525; padding: 20px; border-radius: 8px; border-left: 4px solid ${driver2.team_color || '#00aaff'};">
+                        <h3>${driver2.full_name || driver2.name_acronym || `Driver ${driver2Num}`}</h3>
+                        <p><strong>Average Lap:</strong> ${formatLapTime(avgTime2)}</p>
+                        <p><strong>Best Lap:</strong> ${formatLapTime(bestTime2)}</p>
+                        <p><strong>Total Laps:</strong> ${driver2Laps.length}</p>
+                    </div>
+                </div>
+                <div style="background: #1a1a2e; padding: 20px; border-radius: 8px; margin-top: 20px; text-align: center;">
+                    <h3>Head to Head</h3>
+                    <p style="font-size: 1.5em; color: ${avgTime1 < avgTime2 ? driver1.team_color : driver2.team_color};">
+                        ${avgTime1 < avgTime2 ? (driver1.full_name || driver1.name_acronym) : (driver2.full_name || driver2.name_acronym)} 
+                        is faster by ${Math.abs(avgTime1 - avgTime2).toFixed(3)}s on average
+                    </p>
+                </div>
+            `;
+        }
+
+        function toggleAutoRefresh() {
+            autoRefresh = !autoRefresh;
+            const btn = document.getElementById('autoRefreshBtn');
+
+            if (autoRefresh) {
+                btn.textContent = 'Auto-Refresh: ON';
+                btn.classList.add('active');
+                refreshInterval = setInterval(loadRaceData, 5000);
+            } else {
+                btn.textContent = 'Auto-Refresh: OFF';
+                btn.classList.remove('active');
+                clearInterval(refreshInterval);
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -340,17 +340,36 @@ class OpenF1Client:
         }
     
     def get_comprehensive_race_data(self, session_key: int) -> Dict:
-        """Get all data for a race session in one call"""
-        return {
-            "session_info": self.get_session_info(session_key),
-            "drivers": self.get_drivers(session_key),
-            "positions": self.get_latest_positions(session_key),
-            "pit_stops": self.get_pit_stops(session_key),
-            "race_control": self.get_race_control_messages(session_key),
-            "team_radio": self.get_team_radio(session_key),
-            "weather": self.get_weather(session_key),
-            "intervals": self.get_intervals(session_key),
-            "stints": self.get_stints(session_key),
-            "fastest_laps": self.get_fastest_laps(session_key),
-            "all_laps": self.get_lap_data(session_key)
+        """Get all data for a race session in one call using parallel execution"""
+        import concurrent.futures
+        
+        # Define the tasks to run in parallel
+        tasks = {
+            "session_info": lambda: self.get_session_info(session_key),
+            "drivers": lambda: self.get_drivers(session_key),
+            "positions": lambda: self.get_latest_positions(session_key),
+            "pit_stops": lambda: self.get_pit_stops(session_key),
+            "race_control": lambda: self.get_race_control_messages(session_key),
+            "team_radio": lambda: self.get_team_radio(session_key),
+            "weather": lambda: self.get_weather(session_key),
+            "intervals": lambda: self.get_intervals(session_key),
+            "stints": lambda: self.get_stints(session_key),
+            "fastest_laps": lambda: self.get_fastest_laps(session_key),
+            "all_laps": lambda: self.get_lap_data(session_key)
         }
+        
+        results = {}
+        
+        # Execute tasks in parallel
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            future_to_key = {executor.submit(task): key for key, task in tasks.items()}
+            
+            for future in concurrent.futures.as_completed(future_to_key):
+                key = future_to_key[future]
+                try:
+                    results[key] = future.result()
+                except Exception as e:
+                    print(f"Error fetching {key}: {e}")
+                    results[key] = [] if key != "session_info" else {}
+                    
+        return results

@@ -360,7 +360,6 @@ class OpenF1Client:
         
         results = {}
         
-        # Execute tasks in parallel
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             future_to_key = {executor.submit(task): key for key, task in tasks.items()}
             

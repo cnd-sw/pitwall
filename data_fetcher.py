@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 class OpenF1Client:
-    BASE_URL = "https://api.openf1.org/v1"
+    BASE_URL = "https://api.openf1.org/v1" ##open API
     
     # Team colors mapping
     TEAM_COLORS = {
